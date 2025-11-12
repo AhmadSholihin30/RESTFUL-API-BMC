@@ -29,9 +29,17 @@ class ProfileController extends Controller
         ], 404);
     }
 
+    $data = [
+        'no_reg' => $user->no_reg,
+        'username' => $user->username,
+        'nama' => $user->nama,
+        'alamat' => $user->alamat,
+        'umur' => $user->umur,
+    ];
+
     return response()->json([
         'status' => 'success',
-        'data' => $user,
+        'data' => $data,
     ]);
 }
 
@@ -69,6 +77,18 @@ class ProfileController extends Controller
             'message' => 'Tidak ada data yang diubah',
         ], 400);
     }
+    if ($user instanceof \App\Models\Pasien) {
+        $data = [
+            'no_reg' => $user->no_reg,
+            'username' => $user->username,
+            'nama' => $user->nama,
+            'alamat' => $user->alamat,
+            'umur' => $user->umur,
+        ];
+    } else {
+        // Kalau bidan, bisa tampilkan semua atau pilih field lain sesuai kebutuhan
+        $data = $user;
+    }
 
     // 🛠️ Update data
     $user->update($validated);
@@ -76,7 +96,7 @@ class ProfileController extends Controller
     return response()->json([
         'status' => 'success',
         'message' => 'Profil berhasil diperbarui',
-        'data' => $user
+        'data' => $data
     ]);
 }
 
@@ -101,10 +121,18 @@ public function updatePassword(Request $request)
     }
 
     // ✅ Validasi input
+    try {
     $request->validate([
         'password_lama' => 'required|string',
         'password_baru' => 'required|string|min:6|confirmed',
     ]);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+       $messages = collect($e->errors())->flatten()->first();
+        return response()->json([
+            'status' => 'error',
+            'message' => $messages,
+        ], 422);
+    }
 
     // 🔍 Cek password lama
     if (!Hash::check($request->password_lama, $user->password)) {

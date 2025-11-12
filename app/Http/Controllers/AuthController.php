@@ -20,9 +20,6 @@ class AuthController extends Controller
         $this->bidanService = $bidanService;
     }
 
-    /**
-     * Login untuk pasien atau bidan.
-     */
     public function login(Request $request)
     {
         $request->validate([
@@ -34,14 +31,14 @@ class AuthController extends Controller
         $user = null;
         $userType = null;
 
-        // 🔹 Coba login pasien
+        // 🔹 Cek login pasien
         $pasien = $this->pasienService->login($credentials);
         if ($pasien) {
             $user = $pasien;
             $userType = 'pasien';
         }
 
-        // 🔹 Coba login bidan
+        // 🔹 Cek login bidan
         if (!$user) {
             $bidan = $this->bidanService->login($credentials);
             if ($bidan) {
@@ -50,33 +47,30 @@ class AuthController extends Controller
             }
         }
 
-        // 🔹 Kalau user tetap null => gagal login
         if (!$user) {
-            throw ValidationException::withMessages([
-                'username' => 'Username atau password salah.',
-            ]);
+            return response()->json(['error' => 'Username atau password salah'], 401);
         }
 
-        // 🔹 Tentukan klaim JWT sesuai tipe user
+        // 🔹 Klaim JWT
         $customClaims = $userType === 'pasien'
             ? [
                 'no_reg' => (string) $user->no_reg,
                 'username' => $user->username,
-                'nama' => $user->nama
+                'nama' => $user->nama,
             ]
             : [
                 'id' => (string) $user->id,
                 'username' => $user->username,
-                'nama' => $user->nama
+                'nama' => $user->nama,
             ];
 
-        // 🔹 Buat token JWT sesuai guard
+        // 🔹 Generate token hanya di controller
         $token = auth($userType)->claims($customClaims)->fromUser($user);
 
         // 🔹 Simpan token di cookie (1 hari)
         $cookie = cookie('token', $token, 60 * 24);
 
-        // 🔹 Bentuk respons JSON
+        // 🔹 Response JSON
         $responseData = [
             'message' => 'Login berhasil',
             $userType => $userType === 'pasien'
@@ -104,14 +98,4 @@ class AuthController extends Controller
         return response()->json(['message' => 'Logout berhasil'])->withCookie($cookie);
     }
 
-    /**
-     * Mendapatkan profil user berdasarkan token.
-     */
-    public function profile(Request $request)
-    {
-        return response()->json([
-            'user' => $request->auth_user,
-            'user_type' => $request->auth_type
-        ]);
-    }
 }

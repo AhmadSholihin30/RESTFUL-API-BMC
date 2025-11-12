@@ -7,10 +7,9 @@ use Illuminate\Support\Facades\Hash;
 
 class PasienService
 {
-    public function login(array $credentials)
+  public function login(array $credentials)
     {
         $pasien = Pasien::where('username', $credentials['username'])->first();
-
         if ($pasien && Hash::check($credentials['password'], $pasien->password)) {
             return $pasien;
         }

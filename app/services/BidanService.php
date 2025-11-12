@@ -12,10 +12,9 @@ class BidanService
     /**
      * 🔹 Login Bidan
      */
-    public function login(array $credentials)
+     public function login(array $credentials)
     {
         $bidan = Bidan::where('username', $credentials['username'])->first();
-
         if ($bidan && Hash::check($credentials['password'], $bidan->password)) {
             return $bidan;
         }
