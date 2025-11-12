@@ -3,93 +3,110 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Pasien;
-use App\Models\Bidan;
-use Illuminate\Support\Facades\Hash;
-use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Services\PasienService;
+use App\Services\BidanService;
 use Illuminate\Support\Facades\Cookie;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-   public function login(Request $request)
-{
-    $request->validate([
-        'username' => 'required|string',
-        'password' => 'required|string',
-    ]);
+    protected $pasienService;
+    protected $bidanService;
 
-    $credentials = $request->only('username', 'password');
-    $user = null;
-    $userType = null;
-
-    // Cek pasien
-    $pasien = Pasien::where('username', $credentials['username'])->first();
-    if ($pasien && Hash::check($credentials['password'], $pasien->password)) {
-        $user = $pasien;
-        $userType = 'pasien';
+    public function __construct(PasienService $pasienService, BidanService $bidanService)
+    {
+        $this->pasienService = $pasienService;
+        $this->bidanService = $bidanService;
     }
 
-    // Cek bidan
-    if (!$user) {
-        $bidan = Bidan::where('username', $credentials['username'])->first();
-        if ($bidan && Hash::check($credentials['password'], $bidan->password)) {
-            $user = $bidan;
-            $userType = 'bidan';
+    /**
+     * Login untuk pasien atau bidan.
+     */
+    public function login(Request $request)
+    {
+        $request->validate([
+            'username' => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        $credentials = $request->only('username', 'password');
+        $user = null;
+        $userType = null;
+
+        // 🔹 Coba login pasien
+        $pasien = $this->pasienService->login($credentials);
+        if ($pasien) {
+            $user = $pasien;
+            $userType = 'pasien';
         }
-    }
 
-    if (!$user) {
-        return response()->json(['error' => 'Username atau password salah'], 401);
-    }
+        // 🔹 Coba login bidan
+        if (!$user) {
+            $bidan = $this->bidanService->login($credentials);
+            if ($bidan) {
+                $user = $bidan;
+                $userType = 'bidan';
+            }
+        }
 
-    // 🔹 Tentukan klaim sesuai tipe user
-    if ($userType === 'pasien') {
-        $customClaims = [
-            'no_reg' => (string) $user->no_reg,
-            'username' => $user->username,
-            'nama' => $user->nama
-        ];
-    } else {
-        $customClaims = [
-            'id' => (string) $user->id,
-            'username' => $user->username,
-            'nama' => $user->nama
-        ];
-    }
+        // 🔹 Kalau user tetap null => gagal login
+        if (!$user) {
+            throw ValidationException::withMessages([
+                'username' => 'Username atau password salah.',
+            ]);
+        }
 
-    // 🔹 Generate token sesuai guard userType
-    $token = auth($userType)->claims($customClaims)->fromUser($user);
-
-    // 🔹 Simpan token di cookie (1 hari)
-    $cookie = cookie('token', $token, 60 * 24);
-
-    // 🔹 Response JSON sesuai tipe user
-    $responseData = [
-        'message' => 'Login berhasil',
-        $userType => $userType === 'pasien'
+        // 🔹 Tentukan klaim JWT sesuai tipe user
+        $customClaims = $userType === 'pasien'
             ? [
-                'no_reg' => $user->no_reg,
+                'no_reg' => (string) $user->no_reg,
                 'username' => $user->username,
                 'nama' => $user->nama
             ]
             : [
-                'id' => $user->id,
+                'id' => (string) $user->id,
                 'username' => $user->username,
                 'nama' => $user->nama
-            ]
-    ];
+            ];
 
-    return response()->json($responseData)->withCookie($cookie);
-}
+        // 🔹 Buat token JWT sesuai guard
+        $token = auth($userType)->claims($customClaims)->fromUser($user);
 
+        // 🔹 Simpan token di cookie (1 hari)
+        $cookie = cookie('token', $token, 60 * 24);
 
+        // 🔹 Bentuk respons JSON
+        $responseData = [
+            'message' => 'Login berhasil',
+            $userType => $userType === 'pasien'
+                ? [
+                    'no_reg' => $user->no_reg,
+                    'username' => $user->username,
+                    'nama' => $user->nama
+                ]
+                : [
+                    'id' => $user->id,
+                    'username' => $user->username,
+                    'nama' => $user->nama
+                ]
+        ];
 
+        return response()->json($responseData)->withCookie($cookie);
+    }
+
+    /**
+     * Logout user - hapus cookie JWT.
+     */
     public function logout()
     {
         $cookie = Cookie::forget('token');
         return response()->json(['message' => 'Logout berhasil'])->withCookie($cookie);
     }
 
+    /**
+     * Mendapatkan profil user berdasarkan token.
+     */
     public function profile(Request $request)
     {
         return response()->json([
