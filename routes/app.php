@@ -12,6 +12,7 @@ use App\Http\Controllers\PersalinanController;
 use App\Http\Controllers\CatatanPartografController;
 use App\Http\Controllers\KontraksiController;
 use App\Http\Controllers\KontenEdukasiController;
+use App\Http\Controllers\PesanController;
 
 
 // Route::post('/login', [AuthController::class, 'login']);
@@ -37,6 +38,10 @@ Route::middleware([JwtCookieMiddleware::class])->group(function () {
     Route::get('/konten-edukasi', [KontenEdukasiController::class, 'index']);
     Route::get('/konten-edukasi/{id-konten}', [KontenEdukasiController::class, 'show']);
     Route::get('/partograf/{id}/catatan', [CatatanPartografController::class, 'getCatatanByPartograf']);
+
+    // fitur Chat
+    Route::post('/pesan/{pengirimId}/{penerimaId}', [PesanController::class, 'kirimPesan']);
+    Route::get('/pesan/{bidanId}/{pasienId}', [PesanController::class, 'ambilPesan']);
 
 
 });
