@@ -30,6 +30,8 @@ Route::middleware([JwtCookieMiddleware::class])->group(function () {
     // Persalinan
     Route::get('/persalinan', [PersalinanController::class, 'index']);
     Route::put('/persalinan/{id}/status', [PersalinanController::class, 'ubahStatus']);
+
+    Route::get('/partograf/{id}/catatan', [CatatanPartografController::class, 'getCatatanByPartograf']);
 });
 
 Route::middleware([JwtCookieMiddleware::class, BidanMiddleware::class])->group(function () {
@@ -39,7 +41,6 @@ Route::middleware([JwtCookieMiddleware::class, BidanMiddleware::class])->group(f
 
     // Catatan Partograf
     Route::post('/partograf/{id}/catatan', [CatatanPartografController::class, 'buatCatatanPartograf']);
-    Route::get('/partograf/{id}/catatan', [CatatanPartografController::class, 'getCatatanByPartograf']);
 
     Route::post('/catatan-partograf/{id}/kontraksi', [KontraksiController::class, 'store']);
 
