@@ -104,7 +104,7 @@ class Bidan extends Authenticatable implements JWTSubject
         'tanggal_jam_rawat' => 'required|date',
         'tanggal_jam_mules' => 'required|date',
         'ketuban_pecah' => 'nullable|boolean',
-        'tanggal_jam_ketuban_pecah' => 'required_if:ketuban_pecah,true|date',
+        'tanggal_jam_ketuban_pecah' => 'required_if:ketuban_pecah,true|nullable|date',
     ]);
 
     // 🔹 Cek existing persalinan aktif
