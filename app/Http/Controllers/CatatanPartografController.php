@@ -44,44 +44,4 @@ class CatatanPartografController extends Controller
         ]);
     }
 
-  public function getAllCatatanPartografPasien($noReg)
-{
-    $persalinanList = Persalinan::where('pasien_no_reg', $noReg)->get();
-
-    if ($persalinanList->isEmpty()) {
-        return response()->json([
-            'message' => 'Pasien belum memiliki persalinan'
-        ], 404);
-    }
-
-    $allCatatan = collect();
-
-    foreach ($persalinanList as $persalinan) {
-        // Ambil partograf
-        $partograf = $persalinan->partograf;
-        if ($partograf) {
-            // Ambil semua catatan partograf terkait partograf ini
-            $catatan = CatatanPartograf::with('kontraksi')
-                ->where('partograf_id', $partograf->id)
-                ->orderBy('waktu_catat', 'asc') // urut dari awal
-                ->get();
-
-            $allCatatan = $allCatatan->concat($catatan);
-        }
-    }
-
-    if ($allCatatan->isEmpty()) {
-        return response()->json([
-            'message' => 'Belum ada catatan partograf untuk pasien ini'
-        ], 404);
-    }
-
-    return response()->json([
-        'message' => 'Semua catatan partograf pasien ditemukan',
-        'data' => $allCatatan
-    ], 200);
-}
-
-
-
 }

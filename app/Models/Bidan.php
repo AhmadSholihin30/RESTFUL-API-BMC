@@ -45,6 +45,12 @@ class Bidan extends Authenticatable implements JWTSubject
 
     return $bidan;
 }
+    public function tambahPasien(array $data)
+    {
+        // hanya mengembalikan data + id bidan
+        $data['bidan_id'] = $this->id;
+        return $data;
+    }
 
 
     // --- Metode wajib JWT ---
@@ -170,8 +176,6 @@ class Bidan extends Authenticatable implements JWTSubject
         'partograf' => $partograf
     ];
 }
-
-
 
     public function kirimPesan(Pasien $pasien, string $isiPesan)
     {

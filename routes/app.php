@@ -34,7 +34,7 @@ Route::middleware([JwtCookieMiddleware::class])->group(function () {
     Route::put('/persalinan/{id}/status', [PersalinanController::class, 'ubahStatus']);
 
     //
-    Route::get('/pasien/{no_reg}/catatan-partograf', [CatatanPartografController::class, 'getAllCatatanPartografPasien']);
+    Route::get('/pasien/{no_reg}/progres-persalinan', [PasienController::class, 'lihatProgres']);
 
     //get data pasien by no_reg
     Route::get('/pasien/{no_reg}/getData', [PasienController::class, 'getPasienById']);

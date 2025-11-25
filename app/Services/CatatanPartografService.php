@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\CatatanPartograf;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use App\Models\Persalinan;
+use App\Models\Partograf;
 
 class CatatanPartografService
 {
@@ -28,11 +30,42 @@ class CatatanPartografService
 }
 
     // Ambil semua catatan berdasarkan partograf_id
-    public function getByPartografId(string $partografId)
-    {
-        return CatatanPartograf::with('kontraksi')
-            ->where('partograf_id', $partografId)
-            ->orderBy('waktu_catat', 'asc')
-            ->get();
+    public function getAllCatatanPartografPasien(string $noReg)
+{
+    $persalinanList = Persalinan::where('pasien_no_reg', $noReg)->get();
+
+    if ($persalinanList->isEmpty()) {
+        return null;
     }
+
+    $all = collect();
+
+    foreach ($persalinanList as $persalinan) {
+        $partograf = $persalinan->partograf;
+        if (!$partograf) continue;
+
+        $catatan = CatatanPartograf::with('kontraksi')
+            ->where('partograf_id', $partograf->id)
+            ->orderBy('waktu_catat', 'asc')
+            ->get()
+            ->map(function ($item) {
+
+                return [
+                    'waktu_catat' => $item->waktu_catat,
+                    'pembukaan_servik' => $item->pembukaan_servik,
+                    'djj' => $item->djj,
+                    'sistolik' => $item->sistolik,
+                    'diastolik' => $item->diastolik,
+                    'nadi_ibu' => $item->nadi_ibu,
+                    'suhu_ibu' => $item->suhu_ibu,
+                    'kontraksi' => $item->kontraksi ?? null,
+                ];
+            });
+
+        $all = $all->concat($catatan);
+    }
+
+    return $all->isEmpty() ? null : $all;
+}
+
 }
